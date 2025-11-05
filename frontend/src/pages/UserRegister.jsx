@@ -28,9 +28,16 @@ const UserRegister = () => {
     }
 
     try {
-      await apiClient.register(formData);
-      toast.success('Registration successful! Please login.');
-      navigate('/login');
+      const response = await apiClient.register(formData);
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        toast.success('Registration successful!');
+        navigate('/user-dashboard');
+      } else {
+        toast.success('Registration successful! Please login.');
+        navigate('/login');
+      }
     } catch (error) {
       toast.error(error.message || 'Registration failed');
     }

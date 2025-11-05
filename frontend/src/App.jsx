@@ -23,22 +23,42 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-1">
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/user-dashboard" element={<UserDashboard />} />
-                <Route path="/department-dashboard" element={<DepartmentDashboard />} />
-                <Route path="/user-register" element={<UserRegister />} />
-                <Route path="/department-register" element={<DepartmentRegister />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/about" element={<About />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </div>
+          <Routes>
+            <Route path="/" element={
+              <>
+                <Navbar />
+                <LandingPage />
+              </>
+            } />
+            <Route path="/user-dashboard" element={<UserDashboard />} />
+            <Route path="/department-dashboard" element={<DepartmentDashboard />} />
+            <Route path="/user-register" element={
+              <>
+                <Navbar />
+                <UserRegister />
+              </>
+            } />
+            <Route path="/department-register" element={
+              <>
+                <Navbar />
+                <DepartmentRegister />
+              </>
+            } />
+            <Route path="/login" element={
+              <>
+                <Navbar />
+                <Login />
+              </>
+            } />
+            <Route path="/about" element={
+              <>
+                <Navbar />
+                <About />
+              </>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

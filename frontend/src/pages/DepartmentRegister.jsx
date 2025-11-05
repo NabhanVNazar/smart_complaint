@@ -30,9 +30,16 @@ const DepartmentRegister = () => {
     }
 
     try {
-      await apiClient.registerDepartment(formData);
-      toast.success('Department registered successfully! Please login.');
-      navigate('/login');
+      const response = await apiClient.registerDepartment(formData);
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        toast.success('Department registered successfully!');
+        navigate('/department-dashboard');
+      } else {
+        toast.success('Department registered successfully! Please login.');
+        navigate('/login');
+      }
     } catch (error) {
       toast.error(error.message || 'Registration failed');
     }
