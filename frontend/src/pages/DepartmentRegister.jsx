@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2 } from 'lucide-react';
+import { Building2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 
 const DepartmentRegister = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     departmentName: '',
     departmentType: '',
@@ -24,10 +25,23 @@ const DepartmentRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Client-side validation
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
+
+    if (!/^\+?\d{10,15}$/.test(formData.phone)) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await apiClient.registerDepartment(formData);
@@ -42,6 +56,8 @@ const DepartmentRegister = () => {
       }
     } catch (error) {
       toast.error(error.message || 'Registration failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -163,8 +179,15 @@ const DepartmentRegister = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full bg-primary hover:bg-accent active:scale-95 transition-all">
-              Register Department
+            <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-accent active:scale-95 transition-all">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                'Register Department'
+              )}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">

@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
 
 const UserRegister = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,10 +23,23 @@ const UserRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Client-side validation
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
+
+    if (!/^\+?\d{10,15}$/.test(formData.phone)) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await apiClient.register(formData);
@@ -40,6 +54,8 @@ const UserRegister = () => {
       }
     } catch (error) {
       toast.error(error.message || 'Registration failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -141,8 +157,15 @@ const UserRegister = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full bg-primary hover:bg-accent active:scale-95 transition-all">
-              Register
+            <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-accent active:scale-95 transition-all">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                'Register'
+              )}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">

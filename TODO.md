@@ -1,18 +1,9 @@
-# Task: Restructure Frontend to 'frontend' Folder, Convert to JS, Complete Backend
+# TODO: Make Registration Perfect
 
-## Steps
-- [x] Create 'frontend' top-level folder
-- [x] Move frontend files (src/, public/, package.json, etc.) to frontend/
-- [x] Convert all .tsx files to .jsx in frontend/
-- [x] Convert all .ts files to .js in frontend/
-- [x] Remove TypeScript syntax from converted files
-- [x] Update frontend/package.json (remove TS deps, adjust scripts)
-- [x] Convert backend/src/index.ts to index.js
-- [x] Remove TS syntax from backend files
-- [x] Add more backend routes (users, departments, auth)
-- [x] Update backend/package.json (remove TS deps)
-- [x] Install libraries in frontend and backend
-- [x] Test the application
-- [x] Integrate frontend with backend API
-- [x] Replace mock data with real API calls in dashboards
-- [x] Implement filtering in DepartmentDashboard
+- [ ] Update backend user registration to accept and save phone and address
+- [ ] Add password strength validation (min 6 characters) in backend
+- [ ] Add client-side validation in UserRegister.jsx (password strength, phone format)
+- [ ] Add client-side validation in DepartmentRegister.jsx (password strength, phone format)
+- [ ] Ensure email uniqueness checks are consistent
+- [ ] Add loading states during registration
+- [ ] Improve error handling and user feedback

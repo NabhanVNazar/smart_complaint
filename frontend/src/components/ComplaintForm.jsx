@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Upload, MapPin, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api';
@@ -12,14 +12,14 @@ import { apiClient } from '@/lib/api';
 const ComplaintForm = ({ onSubmit }) => {
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
-  const [department, setDepartment] = useState('');
+
   const [photo, setPhoto] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!location.trim() || !description.trim() || !department) {
+    if (!location.trim() || !description.trim()) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -31,7 +31,6 @@ const ComplaintForm = ({ onSubmit }) => {
         title: `Complaint from ${location}`,
         description,
         location,
-        department,
         status: 'pending'
       };
 
@@ -42,7 +41,6 @@ const ComplaintForm = ({ onSubmit }) => {
       // Reset form
       setLocation('');
       setDescription('');
-      setDepartment('');
       setPhoto(null);
     } catch (error) {
       toast.error('Failed to submit complaint');
@@ -95,22 +93,7 @@ const ComplaintForm = ({ onSubmit }) => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="department">Department *</Label>
-            <Select value={department} onValueChange={setDepartment} required>
-              <SelectTrigger className="focus:ring-primary">
-                <SelectValue placeholder="Select relevant department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Public Works">Public Works</SelectItem>
-                <SelectItem value="Water Supply">Water Supply</SelectItem>
-                <SelectItem value="Electricity">Electricity Board</SelectItem>
-                <SelectItem value="Waste Management">Waste Management</SelectItem>
-                <SelectItem value="Traffic Police">Traffic Police</SelectItem>
-                <SelectItem value="Health">Health Department</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
 
           <div className="space-y-2">
             <Label htmlFor="photo" className="flex items-center gap-2">

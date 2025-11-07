@@ -2,7 +2,8 @@
   "dependencies": {
     "@babel/plugin-transform-typescript": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@vitejs/plugin-react": "^5.1.0"
+    "@vitejs/plugin-react": "^5.1.0",
+    "mongoose": "^8.19.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
