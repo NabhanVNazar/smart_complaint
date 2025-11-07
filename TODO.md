@@ -1,18 +1,12 @@
-# Task: Restructure Frontend to 'frontend' Folder, Convert to JS, Complete Backend
+# TODO: Implement MongoDB Schema with Mongoose for Complaint System
 
-## Steps
-- [x] Create 'frontend' top-level folder
-- [x] Move frontend files (src/, public/, package.json, etc.) to frontend/
-- [x] Convert all .tsx files to .jsx in frontend/
-- [x] Convert all .ts files to .js in frontend/
-- [x] Remove TypeScript syntax from converted files
-- [x] Update frontend/package.json (remove TS deps, adjust scripts)
-- [x] Convert backend/src/index.ts to index.js
-- [x] Remove TS syntax from backend files
-- [x] Add more backend routes (users, departments, auth)
-- [x] Update backend/package.json (remove TS deps)
-- [x] Install libraries in frontend and backend
-- [x] Test the application
-- [x] Integrate frontend with backend API
-- [x] Replace mock data with real API calls in dashboards
-- [x] Implement filtering in DepartmentDashboard
+## Steps to Complete
+- [x] Update backend/package.json to add mongoose and mongodb dependencies
+- [x] Create backend/src/models directory
+- [x] Create backend/src/models/Authority.js model
+- [x] Create backend/src/models/Complaint.js model
+- [x] Create backend/src/models/User.js model
+- [x] Create backend/src/models/Department.js model
+- [x] Update backend/src/index.js to connect to MongoDB and replace in-memory arrays with database operations
+- [x] Add AI routing placeholder in complaint creation
+- [ ] Test backend with MongoDB (ensure MongoDB is running locally or provide connection string)
