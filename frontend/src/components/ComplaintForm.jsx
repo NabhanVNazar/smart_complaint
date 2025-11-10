@@ -7,46 +7,37 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Upload, MapPin, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiClient } from '@/lib/api';
+import { useStore } from '@/pages/useStore';
 
 const ComplaintForm = ({ onSubmit }) => {
   const [location, setLocation] = useState('');
-  const [description, setDescription] = useState('');
-
+  const [text, setText] = useState('');
+  const createComplaint = useStore(state => state.createComplaint);
   const [photo, setPhoto] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!location.trim() || !description.trim()) {
+    if (!location.trim() || !text.trim()) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     setIsSubmitting(true);
 
-    try {
-      const complaintData = {
-        title: `Complaint from ${location}`,
-        description,
-        location,
-        status: 'pending'
-      };
-
-      await apiClient.createComplaint(complaintData);
-
-      toast.success('Complaint submitted successfully!');
-
+    const success = await createComplaint({
+      text,
+      location,
+    });
+    
+    if (success) {
       // Reset form
       setLocation('');
-      setDescription('');
+      setText('');
       setPhoto(null);
-    } catch (error) {
-      toast.error('Failed to submit complaint');
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
 
   const handlePhotoChange = (e) => {
@@ -81,12 +72,12 @@ const ComplaintForm = ({ onSubmit }) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="text">Description *</Label>
             <Textarea
-              id="description"
+              id="text"
               placeholder="Describe the issue in detail..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
               required
               rows={5}
               className="focus:ring-primary hover:border-accent transition-colors resize-none"

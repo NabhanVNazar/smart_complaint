@@ -8,58 +8,82 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, TrendingUp, Clock, CheckCircle, AlertCircle, BarChart3, Users, MapPin } from 'lucide-react';
 import { apiClient } from '@/lib/api';
-import { toast } from 'sonner';
+import { useStore } from '@/pages/useStore';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const [complaints, setComplaints] = useState([]);
+  const { complaints, fetchUserComplaints, handleStatusUpdateMessage, isAuthenticated } = useStore();
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
     inProgress: 0,
     resolved: 0
   });
-
+  
   useEffect(() => {
     // Check if user is authenticated
-    if (!apiClient.isAuthenticated()) {
+    if (!isAuthenticated) {
       navigate('/login');
       return;
     }
 
     const fetchComplaints = async () => {
-      try {
-        const data = await apiClient.getComplaints();
-        setComplaints(data);
-        // Calculate stats
-        const total = data.length;
-        const pending = data.filter(c => c.status === 'pending').length;
-        const inProgress = data.filter(c => c.status === 'in-progress').length;
-        const resolved = data.filter(c => c.status === 'resolved').length;
-        setStats({ total, pending, inProgress, resolved });
-      } catch (error) {
-        toast.error('Failed to load complaints');
-      }
+      await fetchUserComplaints();
     };
     fetchComplaints();
-  }, [navigate]);
+  }, [isAuthenticated, navigate, fetchUserComplaints]);
+
+  useEffect(() => {
+    const total = complaints.length;
+    const pending = complaints.filter(c => c.status === 'Pending' || c.status === 'pending').length;
+    const inProgress = complaints.filter(c => c.status === 'in-progress').length;
+    const resolved = complaints.filter(c => c.status === 'Resolved' || c.status === 'resolved').length;
+    setStats({ total, pending, inProgress, resolved });
+  }, [complaints]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // WebSocket connection URL needs to be ws:// or wss://
+    const wsUrl = apiClient.baseURL.replace(/^http/, 'ws');
+    const ws = new WebSocket(`${wsUrl}?token=${token}`);
+
+    ws.onopen = () => {
+      console.log('WebSocket connection established.');
+    };
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'STATUS_UPDATE') {
+        handleStatusUpdateMessage(message.payload);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket connection closed.');
+    };
+
+    // Cleanup on component unmount
+    return () => ws.close();
+  }, [handleStatusUpdateMessage]);
 
 
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending': return <Clock className="h-4 w-4" />;
+      case 'pending': case 'Pending': return <Clock className="h-4 w-4" />;
       case 'in-progress': return <TrendingUp className="h-4 w-4" />;
-      case 'resolved': return <CheckCircle className="h-4 w-4" />;
+      case 'resolved': case 'Resolved': return <CheckCircle className="h-4 w-4" />;
       default: return <AlertCircle className="h-4 w-4" />;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'pending': case 'Pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
       case 'in-progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'resolved': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'resolved': case 'Resolved': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
   };
@@ -151,7 +175,7 @@ const UserDashboard = () => {
                     </div>
                   ) : (
                     complaints.map((complaint) => (
-                      <div key={complaint.id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div key={complaint._id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -159,12 +183,12 @@ const UserDashboard = () => {
                           </div>
                           <Badge variant="secondary" className={`${getStatusColor(complaint.status)} flex items-center gap-1`}>
                             {getStatusIcon(complaint.status)}
-                            {complaint.status}
+                            {complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1)}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{complaint.description}</p>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{complaint.timestamp}</span>
+                          <span>{new Date(complaint.createdAt).toLocaleString()}</span>
                           <span className="font-medium">{complaint.department}</span>
                         </div>
                       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,17 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogIn } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiClient } from '@/lib/api';
+import { useStore } from '@/pages/useStore';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login, generateDeptLoginOtp: generateOtp } = useStore();
   const [userLogin, setUserLogin] = useState({ email: '', password: '' });
-  const [deptLogin, setDeptLogin] = useState({ email: '', password: '' });
+  const [deptLogin, setDeptLogin] = useState({ email: '', otp: '' });
+  const [deptStep, setDeptStep] = useState(1); // 1: enter email, 2: enter OTP
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleUserLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await apiClient.login(userLogin);
+      const response = await login(userLogin, 'user');
       toast.success('Login successful!');
       navigate('/user-dashboard');
     } catch (error) {
@@ -27,13 +30,26 @@ const Login = () => {
 
   const handleDeptLogin = async (e) => {
     e.preventDefault();
-    try {
-      const response = await apiClient.login(deptLogin);
-      toast.success('Login successful!');
-      navigate('/department-dashboard');
-    } catch (error) {
-      toast.error(error.message || 'Login failed');
+    setIsLoading(true);
+    if (deptStep === 1) {
+      try {
+        const success = await generateOtp({ email: deptLogin.email });
+        if (success) setDeptStep(2);
+      } catch (error) {
+        toast.error(error.message || 'Failed to generate OTP');
+      }
+    } else {
+      try {
+        const response = await login(deptLogin, 'department');
+        if (response.token) {
+          toast.success('Login successful!');
+          navigate('/department-dashboard');
+        }
+      } catch (error) {
+        toast.error(error.message || 'Login failed');
+      }
     }
+    setIsLoading(false);
   };
 
   return (
@@ -106,21 +122,24 @@ const Login = () => {
                     onChange={(e) => setDeptLogin({ ...deptLogin, email: e.target.value })}
                     required
                     className="focus:ring-primary hover:border-accent transition-colors"
+                    disabled={deptStep === 2}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="dept-password">Password</Label>
-                  <Input
-                    id="dept-password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={deptLogin.password}
-                    onChange={(e) => setDeptLogin({ ...deptLogin, password: e.target.value })}
-                    required
-                    className="focus:ring-primary hover:border-accent transition-colors"
-                  />
-                </div>
+                {deptStep === 2 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="dept-otp">OTP</Label>
+                    <Input
+                      id="dept-otp"
+                      type="text"
+                      placeholder="Enter OTP from console"
+                      value={deptLogin.otp}
+                      onChange={(e) => setDeptLogin({ ...deptLogin, otp: e.target.value })}
+                      required
+                      className="focus:ring-primary hover:border-accent transition-colors"
+                    />
+                  </div>
+                )}
 
                 <Button type="submit" className="w-full bg-primary hover:bg-accent active:scale-95 transition-all">
                   Login as Department

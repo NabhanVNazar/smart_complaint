@@ -9,7 +9,6 @@ const departmentSchema = new mongoose.Schema({
   },
   departmentType: {
     type: String,
-    required: true,
     trim: true
   },
   email: {
@@ -21,17 +20,14 @@ const departmentSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: true,
     trim: true
   },
   officerName: {
     type: String,
-    required: true,
     trim: true
   },
   password: {
     type: String,
-    required: true
   },
   type: {
     type: String,

@@ -6,6 +6,7 @@ class ApiClient {
   }
 
   async request(endpoint, options = {}) {
+    console.log(`Making API request to: ${this.baseURL}${endpoint}`); // Log the full URL
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
@@ -31,7 +32,7 @@ class ApiClient {
 
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error(`API request to ${endpoint} failed:`, error); // More specific error logging
       throw error;
     }
   }
@@ -56,10 +57,53 @@ class ApiClient {
     });
   }
 
+  // New Department Auth
+  async getStates() {
+    return this.request('/locations/states');
+  }
+
+  async getDistricts(state) {
+    return this.request(`/locations/districts?state=${state}`);
+  }
+
+  async getAuthorities({ level, state, district }) {
+    const params = new URLSearchParams({ level, state, district });
+    // remove empty params
+    for (let p of params) if (!p[1]) params.delete(p[0]);
+    return this.request(`/departments/authorities?${params.toString()}`);
+  }
+
   async registerDepartment(deptData) {
-    return this.request('/departments', {
+    // This now generates OTP
+    return this.request('/departments/register', {
       method: 'POST',
       body: JSON.stringify(deptData),
+    });
+  }
+
+  async verifyDepartmentOtp(otpData) {
+    const response = await this.request('/departments/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(otpData),
+    });
+    if (response.token) {
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+    }
+    return response;
+  }
+
+  async generateDeptLoginOtp(credentials) {
+    return this.request('/departments/login/generate-otp', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  }
+
+  async verifyDeptLoginOtp(credentials) {
+    return this.request('/departments/login/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
     });
   }
 
@@ -73,6 +117,18 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(complaintData),
     });
+  }
+
+  async updateComplaintStatus(complaintId, status) {
+    return this.request(`/complaints/${complaintId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Department-specific complaints
+  async getDepartmentComplaints({ page = 1, limit = 5 }) {
+    return this.request(`/departments/complaints?page=${page}&limit=${limit}`);
   }
 
   // Users endpoints

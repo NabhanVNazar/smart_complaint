@@ -1,62 +1,46 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardNavbar from '@/components/DashboardNavbar';
-import FilterBar from '@/components/FilterBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, TrendingUp, Clock, CheckCircle, AlertCircle, BarChart3, Users, MapPin, Filter, Calendar, Search, RefreshCw } from 'lucide-react';
-import { apiClient } from '@/lib/api';
-import { toast } from 'sonner';
+import { Building2, TrendingUp, Clock, CheckCircle, AlertCircle, BarChart3, Users, MapPin, Filter, Calendar, Search, RefreshCw, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useStore } from '@/pages/useStore';
 
 const DepartmentDashboard = () => {
   const navigate = useNavigate();
-  const [complaints, setComplaints] = useState([]);
+  const {
+    complaints, pagination, fetchDepartmentComplaints, updateComplaintStatus, setPage, isAuthenticated
+  } = useStore();
   const [filteredComplaints, setFilteredComplaints] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
-    inProgress: 0,
     resolved: 0
   });
   const [filters, setFilters] = useState({
     location: '',
     status: 'all',
     date: '',
-    department: 'all'
   });
 
   useEffect(() => {
     // Check if user is authenticated
-    if (!apiClient.isAuthenticated()) {
+    if (!isAuthenticated) {
       navigate('/login');
       return;
     }
+    fetchDepartmentComplaints(pagination.page);
+  }, [isAuthenticated, navigate, fetchDepartmentComplaints, pagination.page]);
 
-    const fetchData = async () => {
-      try {
-        const [complaintsData, departmentsData] = await Promise.all([
-          apiClient.getComplaints(),
-          apiClient.getDepartments()
-        ]);
-        setComplaints(complaintsData);
-        setFilteredComplaints(complaintsData);
-        setDepartments(departmentsData);
-
-        // Calculate stats
-        const total = complaintsData.length;
-        const pending = complaintsData.filter(c => c.status === 'pending').length;
-        const inProgress = complaintsData.filter(c => c.status === 'in-progress').length;
-        const resolved = complaintsData.filter(c => c.status === 'resolved').length;
-        setStats({ total, pending, inProgress, resolved });
-      } catch (error) {
-        toast.error('Failed to load data');
-      }
-    };
-    fetchData();
-  }, [navigate]);
+  useEffect(() => {
+    // This logic is for client-side filtering. It runs whenever the base complaints list or filters change.
+    const total = pagination.totalComplaints;
+    const pending = complaints.filter(c => c.status === 'Pending').length;
+    const resolved = complaints.filter(c => c.status === 'Resolved').length;
+    setStats({ total, pending, resolved });
+  }, [complaints, pagination.totalComplaints]);
 
   useEffect(() => {
     let filtered = [...complaints];
@@ -75,14 +59,7 @@ const DepartmentDashboard = () => {
 
     // Date filter
     if (filters.date) {
-      filtered = filtered.filter(complaint =>
-        complaint.timestamp.startsWith(filters.date)
-      );
-    }
-
-    // Department filter
-    if (filters.department !== 'all') {
-      filtered = filtered.filter(complaint => complaint.department === filters.department);
+      filtered = filtered.filter(complaint => complaint.createdAt.startsWith(filters.date));
     }
 
     setFilteredComplaints(filtered);
@@ -92,44 +69,37 @@ const DepartmentDashboard = () => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleStatusUpdate = async (complaintId, newStatus) => {
-    try {
-      // In a real app, you'd have an API endpoint to update complaint status
-      // For now, we'll just update the local state
-      const updatedComplaints = complaints.map(complaint =>
-        complaint.id === complaintId ? { ...complaint, status: newStatus } : complaint
-      );
-      setComplaints(updatedComplaints);
-      toast.success('Complaint status updated successfully');
-    } catch (error) {
-      toast.error('Failed to update complaint status');
-    }
-  };
-
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending': return <Clock className="h-4 w-4" />;
-      case 'in-progress': return <TrendingUp className="h-4 w-4" />;
-      case 'resolved': return <CheckCircle className="h-4 w-4" />;
+      case 'Pending': return <Clock className="h-4 w-4" />;
+      case 'Resolved': return <CheckCircle className="h-4 w-4" />;
       default: return <AlertCircle className="h-4 w-4" />;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'in-progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'resolved': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'Resolved': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
+  };
+
+  const getSeverityBadge = (severity) => {
+    const styles = {
+      S: 'bg-red-500 text-white',
+      A: 'bg-orange-500 text-white',
+      B: 'bg-yellow-500 text-black',
+      C: 'bg-blue-500 text-white',
+    };
+    return <Badge className={`${styles[severity] || 'bg-gray-400'} w-8 h-8 flex items-center justify-center text-sm font-bold`}>{severity}</Badge>;
   };
 
   const clearFilters = () => {
     setFilters({
       location: '',
       status: 'all',
-      date: '',
-      department: 'all'
+      date: ''
     });
   };
 
@@ -145,13 +115,13 @@ const DepartmentDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="card-elevated">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Complaints</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.total}</p>
+                  <p className="text-3xl font-bold text-foreground">{pagination.totalComplaints}</p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-primary" />
               </div>
@@ -166,18 +136,6 @@ const DepartmentDashboard = () => {
                   <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
                 </div>
                 <Clock className="h-8 w-8 text-yellow-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-elevated">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                  <p className="text-3xl font-bold text-blue-600">{stats.inProgress}</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-blue-600" />
               </div>
             </CardContent>
           </Card>
@@ -204,7 +162,7 @@ const DepartmentDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Location</label>
                 <div className="relative">
@@ -227,9 +185,8 @@ const DepartmentDashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Resolved">Resolved</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -247,23 +204,6 @@ const DepartmentDashboard = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Department</label>
-                <Select value={filters.department} onValueChange={(value) => handleFilterChange('department', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Departments" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Departments</SelectItem>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.departmentName}>
-                        {dept.departmentName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="flex items-end">
                 <Button onClick={clearFilters} variant="outline" className="w-full">
                   <RefreshCw className="h-4 w-4 mr-2" />
@@ -277,9 +217,9 @@ const DepartmentDashboard = () => {
         {/* Complaints List */}
         <Card className="card-elevated">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center justify-between">
               <Users className="h-5 w-5 text-primary" />
-              Complaints ({filteredComplaints.length})
+              Complaints ({pagination.totalComplaints})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -292,31 +232,32 @@ const DepartmentDashboard = () => {
                 </div>
               ) : (
                 filteredComplaints.map((complaint) => (
-                  <div key={complaint.id} className="border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
+                  <div key={complaint._id} className="border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <MapPin className="h-5 w-5 text-muted-foreground" />
+                        {getSeverityBadge(complaint.severity)}
                         <div>
                           <h3 className="font-semibold text-foreground">{complaint.location}</h3>
-                          <p className="text-sm text-muted-foreground">{complaint.timestamp}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(complaint.createdAt).toLocaleString()}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className={`${getStatusColor(complaint.status)} flex items-center gap-1`}>
                           {getStatusIcon(complaint.status)}
-                          {complaint.status}
+                          {complaint.status.charAt(0).toUpperCase() + complaint.status.slice(1)}
                         </Badge>
                         <Select
                           value={complaint.status}
-                          onValueChange={(value) => handleStatusUpdate(complaint.id, value)}
+                          onValueChange={(value) => updateComplaintStatus(complaint._id, value)}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="in-progress">In Progress</SelectItem>
-                            <SelectItem value="resolved">Resolved</SelectItem>
+                            <SelectItem value="Pending">Pending</SelectItem>
+                            <SelectItem value="Resolved">Resolved</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -326,12 +267,28 @@ const DepartmentDashboard = () => {
 
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium text-primary">{complaint.department}</span>
-                      <span className="text-muted-foreground">ID: {complaint.id}</span>
+                      <span className="text-muted-foreground">ID: {complaint._id}</span>
                     </div>
                   </div>
                 ))
               )}
             </div>
+            {/* Pagination Controls */}
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-center pt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setPage(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                ><ChevronLeft className="h-4 w-4" /> Previous</Button>
+                <span className="mx-4 text-sm font-medium">Page {pagination.page} of {pagination.totalPages}</span>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages}
+                >Next <ChevronRight className="h-4 w-4" /></Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
