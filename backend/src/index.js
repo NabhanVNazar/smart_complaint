@@ -87,7 +87,14 @@ app.post('/api/complaints', protect, async (req, res) => {
       return res.status(500).json({ error: 'AI service failed to classify complaint.' });
     }
 
+    // Verify user exists before creating complaint
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
     const complaint = new Complaint({
+      title: `Complaint regarding ${department}`, // Auto-generate a title
       description: text, // Mapping text to description
       location,
       department,
@@ -105,7 +112,7 @@ app.post('/api/complaints', protect, async (req, res) => {
       complaintId: complaint._id,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create complaint' });
+    res.status(500).json({ error: 'Failed to create complaint', details: error.message });
   }
 });
 
@@ -237,23 +244,36 @@ const districtsByState = {
 const departmentTemplates = {
     central: [
         { name: "Ministry of Home Affairs", email: "home@nic.in" },
-        { name: "Ministry of Finance", email: "finmin@nic.in" },
+        { name: "Ministry of Finance", email: "finance@nic.in" },
         { name: "Ministry of Defence", email: "mod@nic.in" },
-        { name: "Ministry of Railways", email: "rail@nic.in" },
+        { name: "Ministry of Railways", email: "railways@nic.in" },
         { name: "Ministry of Health and Family Welfare", email: "health@nic.in" },
         { name: "Ministry of Road Transport and Highways", email: "morth@nic.in" },
-        { name: "Ministry of Education", email: "edu@nic.in" },
+        { name: "Ministry of Education", email: "education@nic.in" },
         { name: "Ministry of Environment, Forest and Climate Change", email: "moefcc@nic.in" },
+        { name: "Ministry of Agriculture & Farmers Welfare", email: "agri@nic.in" },
+        { name: "Ministry of Communications", email: "comms@nic.in" },
+        { name: "Ministry of Consumer Affairs, Food and Public Distribution", email: "consumeraffairs@nic.in" },
+        { name: "Ministry of Corporate Affairs", email: "mca@nic.in" },
+        { name: "Ministry of Culture", email: "culture@nic.in" },
+        { name: "Ministry of Tourism", email: "tourism@nic.in" },
+        { name: "Ministry of Women and Child Development", email: "wcd@nic.in" },
     ],
     state: [
         { name: "Public Works Department", email: "pwd" },
         { name: "Department of Revenue", email: "revenue" },
         { name: "State Police", email: "police" },
         { name: "State Transport", email: "transport" },
-        { name: "Water Resources Department", email: "water" },
+        { name: "State Water Supply", email: "water" },
         { name: "State Electricity Board", email: "power" },
-        { name: "Health Department", email: "health" },
-        { name: "Education Department", email: "education" },
+        { name: "State Health Department", email: "health" },
+        { name: "State Education Department", email: "education" },
+        { name: "Department of Agriculture", email: "agri" },
+        { name: "Department of Social Justice and Empowerment", email: "socialjustice" },
+        { name: "Department of Tourism", email: "tourism" },
+        { name: "Department of Labour", email: "labour" },
+        { name: "Department of Forest and Wildlife", email: "forest" },
+        { name: "Department of Housing and Urban Development", email: "housing" },
     ],
     district: [
         { name: "District Collector's Office", email: "collector" },
@@ -262,6 +282,11 @@ const departmentTemplates = {
         { name: "District Education Office", email: "edu" },
         { name: "District Police", email: "police" },
         { name: "District Waste Management", email: "waste" },
+        { name: "District Social Welfare Office", email: "socialwelfare" },
+        { name: "District Agriculture Office", email: "agri" },
+        { name: "District Labour Office", email: "labour" },
+        { name: "District Sports Office", email: "sports" },
+        { name: "District Food and Civil Supplies", email: "foodsupply" },
     ]
 };
 

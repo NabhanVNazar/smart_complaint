@@ -2,85 +2,70 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
 
 # Initialize the Flask application
 app = Flask(__name__)
 # Enable Cross-Origin Resource Sharing (CORS)
 CORS(app)
 
-# --- AI Model "Training" on a Simulated Dataset ---
-# This simulates loading and preparing data for a real AI model.
-training_data = {
-    'text': [
-        "power outage and electricity failure in my area",
-        "no water supply for three days",
-        "garbage and waste not collected on main street",
-        "potholes and broken road needs repair",
-        "street lights are not working in the city center",
-        "leaking pipe causing water wastage in Mumbai",
-        "transformer exploded, immediate help needed in Delhi",
-        "sewage overflow on the highway",
-        "traffic signal is broken at the main intersection"
-    ],
-    'department': [
-        "State Electricity Board",
-        "State Water Supply",
-        "District Waste Management",
-        "State Public Works",
-        "State Electricity Board",
-        "State Water Supply",
-        "State Electricity Board",
-        "State Public Works",
-        "Central Transport Authority"
-    ]
-}
-df = pd.DataFrame(training_data)
+# --- Professional ML Model Training Pipeline ---
 
-# --- Create Department Profiles ---
-# This is a more advanced approach. Instead of matching one complaint to another,
-# we create a "profile" for each department based on all its related complaints.
-department_profiles = {}
-for department in df['department'].unique():
-    # Combine all complaint texts for a single department
-    department_texts = " ".join(df[df['department'] == department]['text'])
-    department_profiles[department] = department_texts
+# 1. Load the dataset
+try:
+    df = pd.read_csv('dataset.csv')
+    # Simple data cleaning
+    df.dropna(inplace=True)
+    df['features'] = df['text'] + ' ' + df['location'] + ' ' + df['state']
+except FileNotFoundError:
+    print("FATAL ERROR: dataset.csv not found. Please ensure it is in the ai_service directory.")
+    exit()
 
-# Use TF-IDF to convert our department profiles into numerical vectors
-vectorizer = TfidfVectorizer()
-department_vectors = vectorizer.fit_transform(department_profiles.values())
+# 2. Define Features (X) and Target (y)
+X = df['features']
+y = df['department']
 
-def classify_complaint(complaint_text, location_text):
+# 3. Create a full machine learning pipeline
+# This pipeline handles text vectorization and model training in one step.
+model_pipeline = Pipeline([
+    ('tfidf', TfidfVectorizer(stop_words='english')),
+    ('clf', LogisticRegression(random_state=42, max_iter=1000)) # A robust and standard classifier
+])
+
+# 4. Train the ML Model
+# The pipeline learns from the entire dataset. This is the "training" step.
+model_pipeline.fit(X, y)
+
+print("AI Model trained successfully on the dataset.")
+
+def classify_complaint(complaint_text, location):
     """
-    This is our "trained" AI model.
-    It classifies a complaint by scoring it against department profiles
-    based on both text and location keywords.
+    This function uses the trained ML model to predict the department.
     """
-    input_vector = vectorizer.transform([complaint_text])
+    # The model was trained on a combined feature set, so we create that for prediction.
+    # A more advanced system would parse state/district from the location string.
+    # For the hackathon, we'll assume the location string itself is a useful feature.
+    prediction_features = f"{complaint_text} {location}"
     
-    # --- Text-Based Scoring ---
-    # Calculate how similar the complaint text is to each department's profile
-    text_similarities = (input_vector * department_vectors.T).toarray().flatten()
+    # Use the trained pipeline to predict the department
+    predicted_department = model_pipeline.predict([prediction_features])[0]
     
-    # --- Location-Based Scoring (Simple but effective) ---
-    # Give a score boost if the location name appears in the complaint text
-    # (e.g., "water wastage in Mumbai" and location is "Mumbai")
-    location_scores = [1 if loc.lower() in complaint_text.lower() else 0 for loc in ["mumbai", "delhi"]]
-    
-    # --- Combine Scores and Classify ---
-    # We give more weight to the text, but location can be a tie-breaker.
-    final_scores = (0.8 * text_similarities) + (0.2 * pd.Series(location_scores))
-    best_department_index = final_scores.argmax()
-    department = list(department_profiles.keys())[best_department_index]
-    
-    # --- Determine Severity ---
-    severity_map = {"S": ["power", "electricity", "outage", "exploded"], "A": ["water", "sewage"], "B": ["waste", "garbage"]}
+    # Determine Severity based on keywords (a simple, effective rule-based system)
+    severity_map = {
+        "S": ["power", "electricity", "outage", "exploded", "failure"],
+        "A": ["water", "sewage", "leaking", "dirty", "hospital", "health"],
+        "B": ["waste", "garbage", "clean", "parking", "broken", "road", "pothole"]
+    }
     severity = "C" # Default
     for sev, keywords in severity_map.items():
         if any(keyword in complaint_text.lower() for keyword in keywords):
             severity = sev
             break
             
-    return {"department": department, "severity": severity}
+    return {"department": predicted_department, "severity": severity}
 
 @app.route('/classify', methods=['POST'])
 def classify():

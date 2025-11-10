@@ -35,10 +35,10 @@ const UserDashboard = () => {
 
   useEffect(() => {
     const total = complaints.length;
-    const pending = complaints.filter(c => c.status === 'Pending' || c.status === 'pending').length;
-    const inProgress = complaints.filter(c => c.status === 'in-progress').length;
-    const resolved = complaints.filter(c => c.status === 'Resolved' || c.status === 'resolved').length;
-    setStats({ total, pending, inProgress, resolved });
+    const pendingCount = complaints.filter(c => c.status.toLowerCase() === 'pending').length;
+    const inProgressCount = complaints.filter(c => c.status.toLowerCase() === 'in-progress').length;
+    const resolvedCount = complaints.filter(c => c.status.toLowerCase() === 'resolved').length;
+    setStats({ total, pending: pendingCount, inProgress: inProgressCount, resolved: resolvedCount });
   }, [complaints]);
 
   useEffect(() => {

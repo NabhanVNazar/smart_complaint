@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 
 const complaintSchema = new mongoose.Schema({
   title: {
-    type: String,
-    required: true,
+    type: String, // Title is no longer strictly required for this flow
     trim: true
   },
   description: {
@@ -18,8 +17,8 @@ const complaintSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'in-progress', 'resolved'],
-    default: 'pending'
+    enum: ['Pending', 'In-Progress', 'Resolved', 'pending', 'in-progress', 'resolved'], // Allow for different cases
+    default: 'Pending'
   },
   department: {
     type: String,
@@ -33,7 +32,8 @@ const complaintSchema = new mongoose.Schema({
   },
   departmentId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department'
+    ref: 'Department', // Reference to the Department model
+    required: false,   // Make it explicitly optional
   },
   timestamp: {
     type: Date,
